@@ -25,6 +25,10 @@ on:
 jobs:
   nightly:
 
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     runs-on: ubuntu-latest
 
     steps:
@@ -32,6 +36,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         ref: ${{ github.event.client_payload.ref || github.ref }}
+    - name: Load R2 actions from the workflow revision
+      uses: actions/checkout@v7
+      with:
+        ref: ${{ github.workflow_sha }}
+        path: .ci-artifact-actions
+        persist-credentials: false
+        sparse-checkout: .github/actions/ci-artifacts
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -72,10 +83,11 @@ jobs:
     # Attach the packaged artifacts to the workflow output. These can be manually
     # downloaded for later inspection if necessary.
     - name: Archive artifacts
-      uses: actions/upload-artifact@v4
+      uses: ./.ci-artifact-actions/.github/actions/ci-artifacts/upload
       with:
         name: dist
         path: dist
+        retention-days: 7
 
     - name: Send email on failure
       if: failure()
